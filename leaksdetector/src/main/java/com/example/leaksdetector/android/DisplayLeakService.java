@@ -17,9 +17,12 @@ package com.example.leaksdetector.android;
 
 import android.app.PendingIntent;
 import android.content.res.Resources;
+import android.os.Handler;
+import android.os.Message;
 
 
 import com.example.leaksdetector.android.internal.DisplayLeakActivity;
+import com.example.leaksdetector.android.internal.GcRoot;
 import com.example.leaksdetector.leakcanary.AnalysisResult;
 import com.example.leaksdetector.watcher.HeapDump;
 import com.example.leaksdetector.R;
@@ -34,6 +37,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
+
+import java.util.logging.LogRecord;
+
 import static com.example.leaksdetector.android.LeakCanary.leakInfo;
 import static android.text.format.Formatter.formatShortFileSize;
 import static com.example.leaksdetector.android.internal.LeakCanaryInternals.classSimpleName;
@@ -42,124 +48,127 @@ import static com.example.leaksdetector.android.internal.LeakCanaryInternals.sho
 /**
  * Logs leak analysis results, and then shows a notification which will start {@link
  * DisplayLeakActivity}.
- *
+ * <p/>
  * You can extend this class and override {@link #afterDefaultHandling(HeapDump, AnalysisResult,
  * String)} to add custom behavior, e.g. uploading the heap dump.
  */
 public class DisplayLeakService extends AbstractAnalysisResultService {
 
-  @Override
-  protected final void onHeapAnalyzed(HeapDump heapDump, AnalysisResult result) {
-    String leakInfo = leakInfo(this, heapDump, result, true);
-    CanaryLog.d(leakInfo);
+    @Override
+    protected final void onHeapAnalyzed(HeapDump heapDump, AnalysisResult result) {
+        String leakInfo = leakInfo(this, heapDump, result, true);
+        CanaryLog.d(leakInfo);
+        //自己写的三行
+        Message message = new Message();
+        message.obj = leakInfo;
+        GcRoot.handler.sendMessage(message);
+        boolean resultSaved = false;
+        boolean shouldSaveResult = result.leakFound || result.failure != null;
+        if (shouldSaveResult) {
+            heapDump = renameHeapdump(heapDump);
+            resultSaved = saveResult(heapDump, result);
+        }
 
-    boolean resultSaved = false;
-    boolean shouldSaveResult = result.leakFound || result.failure != null;
-    if (shouldSaveResult) {
-      heapDump = renameHeapdump(heapDump);
-      resultSaved = saveResult(heapDump, result);
-    }
+        PendingIntent pendingIntent;
+        String contentTitle;
+        String contentText;
 
-    PendingIntent pendingIntent;
-    String contentTitle;
-    String contentText;
+        if (!shouldSaveResult) {
+            contentTitle = getString(R.string.leak_canary_no_leak_title);
+            contentText = getString(R.string.leak_canary_no_leak_text);
+            pendingIntent = null;
+        } else if (resultSaved) {
+            pendingIntent = DisplayLeakActivity.createPendingIntent(this, heapDump.referenceKey);
 
-    if (!shouldSaveResult) {
-      contentTitle = getString(R.string.leak_canary_no_leak_title);
-      contentText = getString(R.string.leak_canary_no_leak_text);
-      pendingIntent = null;
-    } else if (resultSaved) {
-      pendingIntent = DisplayLeakActivity.createPendingIntent(this, heapDump.referenceKey);
-
-      if (result.failure == null) {
-        String size = formatShortFileSize(this, result.retainedHeapSize);
-        String className = classSimpleName(result.className);
-        if (result.excludedLeak) {
-          contentTitle = getString(R.string.leak_canary_leak_excluded, className, size);
+            if (result.failure == null) {
+                String size = formatShortFileSize(this, result.retainedHeapSize);
+                String className = classSimpleName(result.className);
+                if (result.excludedLeak) {
+                    contentTitle = getString(R.string.leak_canary_leak_excluded, className, size);
+                } else {
+                    contentTitle = getString(R.string.leak_canary_class_has_leaked, className, size);
+                }
+            } else {
+                contentTitle = getString(R.string.leak_canary_analysis_failed);
+            }
+            contentText = getString(R.string.leak_canary_notification_message);
         } else {
-          contentTitle = getString(R.string.leak_canary_class_has_leaked, className, size);
+            contentTitle = getString(R.string.leak_canary_could_not_save_title);
+            contentText = getString(R.string.leak_canary_could_not_save_text);
+            pendingIntent = null;
         }
-      } else {
-        contentTitle = getString(R.string.leak_canary_analysis_failed);
-      }
-      contentText = getString(R.string.leak_canary_notification_message);
-    } else {
-      contentTitle = getString(R.string.leak_canary_could_not_save_title);
-      contentText = getString(R.string.leak_canary_could_not_save_text);
-      pendingIntent = null;
+        showNotification(this, contentTitle, contentText, pendingIntent);
+        afterDefaultHandling(heapDump, result, leakInfo);
     }
-    showNotification(this, contentTitle, contentText, pendingIntent);
-    afterDefaultHandling(heapDump, result, leakInfo);
-  }
 
-  private boolean saveResult(HeapDump heapDump, AnalysisResult result) {
-    File resultFile = new File(heapDump.heapDumpFile.getParentFile(),
-        heapDump.heapDumpFile.getName() + ".result");
-    FileOutputStream fos = null;
-    try {
-      fos = new FileOutputStream(resultFile);
-      ObjectOutputStream oos = new ObjectOutputStream(fos);
-      oos.writeObject(heapDump);
-      oos.writeObject(result);
-      return true;
-    } catch (IOException e) {
-      CanaryLog.d(e, "Could not save leak analysis result to disk.");
-    } finally {
-      if (fos != null) {
+    private boolean saveResult(HeapDump heapDump, AnalysisResult result) {
+        File resultFile = new File(heapDump.heapDumpFile.getParentFile(),
+                heapDump.heapDumpFile.getName() + ".result");
+        FileOutputStream fos = null;
         try {
-          fos.close();
-        } catch (IOException ignored) {
+            fos = new FileOutputStream(resultFile);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(heapDump);
+            oos.writeObject(result);
+            return true;
+        } catch (IOException e) {
+            CanaryLog.d(e, "Could not save leak analysis result to disk.");
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException ignored) {
+                }
+            }
         }
-      }
+        return false;
     }
-    return false;
-  }
 
-  private HeapDump renameHeapdump(HeapDump heapDump) {
-    String fileName =
-        new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss_SSS'.hprof'", Locale.US).format(new Date());
+    private HeapDump renameHeapdump(HeapDump heapDump) {
+        String fileName =
+                new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss_SSS'.hprof'", Locale.US).format(new Date());
 
-    File newFile = new File(heapDump.heapDumpFile.getParent(), fileName);
-    boolean renamed = heapDump.heapDumpFile.renameTo(newFile);
-    if (!renamed) {
-      CanaryLog.d("Could not rename heap dump file %s to %s", heapDump.heapDumpFile.getPath(),
-          newFile.getPath());
-    }
-    heapDump =
-        new HeapDump(newFile, heapDump.referenceKey, heapDump.referenceName, heapDump.excludedRefs,
-            heapDump.watchDurationMs, heapDump.gcDurationMs, heapDump.heapDumpDurationMs);
-
-    Resources resources = getResources();
-    int maxStoredHeapDumps =
-        Math.max(resources.getInteger(R.integer.leak_canary_max_stored_leaks), 1);
-    File[] hprofFiles = heapDump.heapDumpFile.getParentFile().listFiles(new FilenameFilter() {
-      @Override
-      public boolean accept(File dir, String filename) {
-        return filename.endsWith(".hprof");
-      }
-    });
-
-    if (hprofFiles.length > maxStoredHeapDumps) {
-      // Sort with oldest modified first.
-      Arrays.sort(hprofFiles, new Comparator<File>() {
-        @Override
-        public int compare(File lhs, File rhs) {
-          return Long.valueOf(lhs.lastModified()).compareTo(rhs.lastModified());
+        File newFile = new File(heapDump.heapDumpFile.getParent(), fileName);
+        boolean renamed = heapDump.heapDumpFile.renameTo(newFile);
+        if (!renamed) {
+            CanaryLog.d("Could not rename heap dump file %s to %s", heapDump.heapDumpFile.getPath(),
+                    newFile.getPath());
         }
-      });
-      boolean deleted = hprofFiles[0].delete();
-      if (!deleted) {
-        CanaryLog.d("Could not delete old hprof file %s", hprofFiles[0].getPath());
-      }
-    }
-    return heapDump;
-  }
+        heapDump =
+                new HeapDump(newFile, heapDump.referenceKey, heapDump.referenceName, heapDump.excludedRefs,
+                        heapDump.watchDurationMs, heapDump.gcDurationMs, heapDump.heapDumpDurationMs);
 
-  /**
-   * You can override this method and do a blocking call to a server to upload the leak trace and
-   * the heap dump. Don't forget to check {@link AnalysisResult#leakFound} and {@link
-   * AnalysisResult#excludedLeak} first.
-   */
-  protected void afterDefaultHandling(HeapDump heapDump, AnalysisResult result, String leakInfo) {
-  }
+        Resources resources = getResources();
+        int maxStoredHeapDumps =
+                Math.max(resources.getInteger(R.integer.leak_canary_max_stored_leaks), 1);
+        File[] hprofFiles = heapDump.heapDumpFile.getParentFile().listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String filename) {
+                return filename.endsWith(".hprof");
+            }
+        });
+
+        if (hprofFiles.length > maxStoredHeapDumps) {
+            // Sort with oldest modified first.
+            Arrays.sort(hprofFiles, new Comparator<File>() {
+                @Override
+                public int compare(File lhs, File rhs) {
+                    return Long.valueOf(lhs.lastModified()).compareTo(rhs.lastModified());
+                }
+            });
+            boolean deleted = hprofFiles[0].delete();
+            if (!deleted) {
+                CanaryLog.d("Could not delete old hprof file %s", hprofFiles[0].getPath());
+            }
+        }
+        return heapDump;
+    }
+
+    /**
+     * You can override this method and do a blocking call to a server to upload the leak trace and
+     * the heap dump. Don't forget to check {@link AnalysisResult#leakFound} and {@link
+     * AnalysisResult#excludedLeak} first.
+     */
+    protected void afterDefaultHandling(HeapDump heapDump, AnalysisResult result, String leakInfo) {
+    }
 }

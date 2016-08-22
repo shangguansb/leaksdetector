@@ -1,6 +1,8 @@
 package com.example.leaksdetector.android.internal;
 
 import android.content.Context;
+import android.os.Handler;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.leaksdetector.android.AndroidExcludedRefs;
@@ -21,6 +23,7 @@ import java.lang.ref.ReferenceQueue;
 import java.util.List;
 import java.util.UUID;
 
+
 import static com.example.leaksdetector.android.LeakCanary.leakInfo;
 import static com.example.leaksdetector.watcher.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -36,6 +39,8 @@ public class GcRoot {
     Context context;
     private final ReferenceQueue<Object> queue;
     private final ExcludedRefs excludedRefs;
+    public TextView tx = null;
+    public static android.os.Handler handler;
 
     public GcRoot(Context ctx) {
         this.context = ctx;
@@ -90,8 +95,9 @@ public class GcRoot {
         return reference;
     }
 
-    public void getgc(Object watchedReference) {
+    public void getGcRoot(Object watchedReference, Handler handle) {
         watch(watchedReference);
+        this.handler = handle;
     }
 
     void watch(Object watchedReference) {
@@ -103,6 +109,7 @@ public class GcRoot {
         AndroidHeapDumper heapDumper = new AndroidHeapDumper(context, leakDirectoryProvider);
         heapdumpListener = new ServiceHeapDumpListener(context.getApplicationContext(), DisplayLeakService.class);
         File heapDumpFile = heapDumper.dumpHeap();
+
         if (heapDumpFile == HeapDumper.NO_DUMP) {
             // Could not dump the heap, abort.
             if (context != null) {

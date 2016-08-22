@@ -18,6 +18,7 @@ package com.example.leaksdetector.android.internal;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Message;
 
 import com.example.leaksdetector.android.AbstractAnalysisResultService;
 import com.example.leaksdetector.android.CanaryLog;
@@ -25,39 +26,41 @@ import com.example.leaksdetector.leakcanary.AnalysisResult;
 import com.example.leaksdetector.leakcanary.HeapAnalyzer;
 import com.example.leaksdetector.watcher.HeapDump;
 
+import static com.example.leaksdetector.android.LeakCanary.leakInfo;
+
 /**
  * This service runs in a separate process to avoid slowing down the app process or making it run
  * out of memory.
  */
 public final class HeapAnalyzerService extends IntentService {
 
-  private static final String LISTENER_CLASS_EXTRA = "listener_class_extra";
-  private static final String HEAPDUMP_EXTRA = "heapdump_extra";
+    private static final String LISTENER_CLASS_EXTRA = "listener_class_extra";
+    private static final String HEAPDUMP_EXTRA = "heapdump_extra";
 
-  public static void runAnalysis(Context context, HeapDump heapDump,
-                                 Class<? extends AbstractAnalysisResultService> listenerServiceClass) {
-    Intent intent = new Intent(context, HeapAnalyzerService.class);
-    intent.putExtra(LISTENER_CLASS_EXTRA, listenerServiceClass.getName());
-    intent.putExtra(HEAPDUMP_EXTRA, heapDump);
-    context.startService(intent);
-  }
-
-  public HeapAnalyzerService() {
-    super(HeapAnalyzerService.class.getSimpleName());
-  }
-
-  @Override
-  protected void onHandleIntent(Intent intent) {
-    if (intent == null) {
-      CanaryLog.d("HeapAnalyzerService received a null intent, ignoring.");
-      return;
+    public static void runAnalysis(Context context, HeapDump heapDump,
+                                   Class<? extends AbstractAnalysisResultService> listenerServiceClass) {
+        Intent intent = new Intent(context, HeapAnalyzerService.class);
+        intent.putExtra(LISTENER_CLASS_EXTRA, listenerServiceClass.getName());
+        intent.putExtra(HEAPDUMP_EXTRA, heapDump);
+        context.startService(intent);
     }
-    String listenerClassName = intent.getStringExtra(LISTENER_CLASS_EXTRA);
-    HeapDump heapDump = (HeapDump) intent.getSerializableExtra(HEAPDUMP_EXTRA);
 
-    HeapAnalyzer heapAnalyzer = new HeapAnalyzer(heapDump.excludedRefs);
+    public HeapAnalyzerService() {
+        super(HeapAnalyzerService.class.getSimpleName());
+    }
 
-    AnalysisResult result = heapAnalyzer.checkForLeak(heapDump.heapDumpFile, heapDump.referenceKey);
-    AbstractAnalysisResultService.sendResultToListener(this, listenerClassName, heapDump, result);
-  }
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        if (intent == null) {
+            CanaryLog.d("HeapAnalyzerService received a null intent, ignoring.");
+            return;
+        }
+        String listenerClassName = intent.getStringExtra(LISTENER_CLASS_EXTRA);
+        HeapDump heapDump = (HeapDump) intent.getSerializableExtra(HEAPDUMP_EXTRA);
+
+        HeapAnalyzer heapAnalyzer = new HeapAnalyzer(heapDump.excludedRefs);
+
+        AnalysisResult result = heapAnalyzer.checkForLeak(heapDump.heapDumpFile, heapDump.referenceKey);
+        AbstractAnalysisResultService.sendResultToListener(this, listenerClassName, heapDump, result);
+    }
 }
