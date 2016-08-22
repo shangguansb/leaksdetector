@@ -18,6 +18,7 @@ package com.example.leaksdetector.android.internal;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.Message;
 
 import com.example.leaksdetector.android.AbstractAnalysisResultService;
@@ -36,6 +37,7 @@ public final class HeapAnalyzerService extends IntentService {
 
     private static final String LISTENER_CLASS_EXTRA = "listener_class_extra";
     private static final String HEAPDUMP_EXTRA = "heapdump_extra";
+
 
     public static void runAnalysis(Context context, HeapDump heapDump,
                                    Class<? extends AbstractAnalysisResultService> listenerServiceClass) {
@@ -61,6 +63,11 @@ public final class HeapAnalyzerService extends IntentService {
         HeapAnalyzer heapAnalyzer = new HeapAnalyzer(heapDump.excludedRefs);
 
         AnalysisResult result = heapAnalyzer.checkForLeak(heapDump.heapDumpFile, heapDump.referenceKey);
+        String leakInfo = leakInfo(this, heapDump, result, true);
+        //自己写的三行
+        Message message = new Message();
+        message.obj = leakInfo;
+        GcRoot.handler.sendMessage(message);
         AbstractAnalysisResultService.sendResultToListener(this, listenerClassName, heapDump, result);
     }
 }
