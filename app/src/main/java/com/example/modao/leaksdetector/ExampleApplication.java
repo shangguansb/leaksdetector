@@ -10,6 +10,7 @@ import com.example.leaksdetector.watcher.RefWatcher;
  * Created by modao on 16/8/19.
  */
 public class ExampleApplication extends Application {
+
     public static RefWatcher getRefWatcher(Context context) {
         ExampleApplication application = (ExampleApplication) context.getApplicationContext();
         return application.refWatcher;
