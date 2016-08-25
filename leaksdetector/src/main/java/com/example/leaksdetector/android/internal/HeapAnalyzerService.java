@@ -63,11 +63,11 @@ public final class HeapAnalyzerService extends IntentService {
         HeapAnalyzer heapAnalyzer = new HeapAnalyzer(heapDump.excludedRefs);
 
         AnalysisResult result = heapAnalyzer.checkForLeak(heapDump.heapDumpFile, heapDump.referenceKey);
-        String leakInfo = leakInfo(this, heapDump, result, true);
-        //自己写的三行
-        Message message = new Message();
-        message.obj = leakInfo;
-        GcRoot.handler.sendMessage(message);
+//        String leakInfo = leakInfo(this, heapDump, result, true);
+//        //自己写的三行
+//        Message message = new Message();
+//        message.obj = leakInfo;
+//        GcRoot.handler.sendMessage(message);
         AbstractAnalysisResultService.sendResultToListener(this, listenerClassName, heapDump, result);
     }
 }

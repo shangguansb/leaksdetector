@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.github.dcendents.android-maven'
 group = 'com.example.leaksdetector' // 这里需要和真实包名对应，不能随便填写
-version = '1.0.6' // 指定版本号
+version = '1.0.9' // 指定版本号
 
 
 def gitSha() {
@@ -12,9 +12,8 @@ def gitSha() {
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.0"
-
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 14
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
@@ -29,12 +28,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    productFlavors {
+    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:24.1.1'
+    compile 'com.android.support:appcompat-v7:22.2.0'
     testCompile 'org.assertj:assertj-core:1.7.0'
     compile 'com.squareup.haha:haha:2.0.3'
 }
@@ -70,9 +71,9 @@ bintray {
         name = 'com.example.leaksdetector'
 
         version {
-            name = '1.0.6-tuts'
+            name = '1.0.9-tuts'
             desc = "leaks-detector"
-            vcsTag = '1.0.6'
+            vcsTag = '1.0.0'
         }
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/shangguansb/CoordinatorLayoutUserInfoShowPage.git'

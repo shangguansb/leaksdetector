@@ -31,7 +31,7 @@ import static android.os.Build.VERSION_CODES.JELLY_BEAN;
 import static android.os.Build.VERSION_CODES.KITKAT;
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 import static android.os.Build.VERSION_CODES.LOLLIPOP_MR1;
-import static android.os.Build.VERSION_CODES.M;
+//import static android.os.Build.VERSION_CODES.M;
 import static com.example.leaksdetector.android.AndroidWatchExecutor.LEAK_CANARY_THREAD_NAME;
 import static com.example.leaksdetector.android.internal.LeakCanaryInternals.LG;
 import static com.example.leaksdetector.android.internal.LeakCanaryInternals.MOTOROLA;
@@ -141,34 +141,36 @@ public enum AndroidExcludedRefs {
       excluded.instanceField("android.os.Message", "target").reason(reason);
     }
   },
+/*
+sdk版本是22，所以注释掉这段代码
+ */
+//  INPUT_METHOD_MANAGER__SERVED_VIEW(SDK_INT >= ICE_CREAM_SANDWICH_MR1 && SDK_INT <= M) {
+//    @Override
+//    void add(ExcludedRefs.Builder excluded) {
+//      String reason = "When we detach a view that receives keyboard input, the InputMethodManager"
+//          + " leaks a reference to it until a new view asks for keyboard input."
+//          + " Tracked here: https://code.google.com/p/android/issues/detail?id=171190"
+//          + " Hack: https://gist.github.com/pyricau/4df64341cc978a7de414";
+//      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mNextServedView")
+//          .reason(reason);
+//      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mServedView")
+//          .reason(reason);
+//      excluded.instanceField("android.view.inputmethod.InputMethodManager",
+//          "mServedInputConnection").reason(reason);
+//    }
+//  },
 
-  INPUT_METHOD_MANAGER__SERVED_VIEW(SDK_INT >= ICE_CREAM_SANDWICH_MR1 && SDK_INT <= M) {
-    @Override
-    void add(ExcludedRefs.Builder excluded) {
-      String reason = "When we detach a view that receives keyboard input, the InputMethodManager"
-          + " leaks a reference to it until a new view asks for keyboard input."
-          + " Tracked here: https://code.google.com/p/android/issues/detail?id=171190"
-          + " Hack: https://gist.github.com/pyricau/4df64341cc978a7de414";
-      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mNextServedView")
-          .reason(reason);
-      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mServedView")
-          .reason(reason);
-      excluded.instanceField("android.view.inputmethod.InputMethodManager",
-          "mServedInputConnection").reason(reason);
-    }
-  },
-
-  INPUT_METHOD_MANAGER__ROOT_VIEW(SDK_INT >= ICE_CREAM_SANDWICH_MR1 && SDK_INT <= M) {
-    @Override
-    void add(ExcludedRefs.Builder excluded) {
-      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mCurRootView")
-          .reason("The singleton InputMethodManager is holding a reference to mCurRootView long"
-              + " after the activity has been destroyed."
-              + " Observed on ICS MR1: https://github.com/square/leakcanary/issues/1"
-              + "#issuecomment-100579429"
-              + " Hack: https://gist.github.com/pyricau/4df64341cc978a7de414");
-    }
-  },
+//  INPUT_METHOD_MANAGER__ROOT_VIEW(SDK_INT >= ICE_CREAM_SANDWICH_MR1 && SDK_INT <= M) {
+//    @Override
+//    void add(ExcludedRefs.Builder excluded) {
+//      excluded.instanceField("android.view.inputmethod.InputMethodManager", "mCurRootView")
+//          .reason("The singleton InputMethodManager is holding a reference to mCurRootView long"
+//              + " after the activity has been destroyed."
+//              + " Observed on ICS MR1: https://github.com/square/leakcanary/issues/1"
+//              + "#issuecomment-100579429"
+//              + " Hack: https://gist.github.com/pyricau/4df64341cc978a7de414");
+//    }
+//  },
 
   LAYOUT_TRANSITION(SDK_INT >= ICE_CREAM_SANDWICH && SDK_INT <= LOLLIPOP_MR1) {
     @Override

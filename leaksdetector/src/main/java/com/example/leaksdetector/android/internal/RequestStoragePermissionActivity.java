@@ -31,11 +31,11 @@ import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static android.os.Build.VERSION_CODES.M;
+//import static android.os.Build.VERSION_CODES.M;
 import static android.widget.Toast.LENGTH_LONG;
 import static com.example.leaksdetector.android.internal.LeakCanaryInternals.setEnabledBlocking;
 
-@TargetApi(M) //
+//@TargetApi(M) //
 public class RequestStoragePermissionActivity extends Activity {
 
   public static PendingIntent createPendingIntent(Context context) {
@@ -49,29 +49,29 @@ public class RequestStoragePermissionActivity extends Activity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    if (savedInstanceState == null) {
-      if (hasStoragePermission()) {
-        finish();
-        return;
-      }
-      String[] permissions = {
-          WRITE_EXTERNAL_STORAGE
-      };
-      requestPermissions(permissions, 42);
-    }
+//    if (savedInstanceState == null) {
+//      if (hasStoragePermission()) {
+//        finish();
+//        return;
+//      }
+//      String[] permissions = {
+//          WRITE_EXTERNAL_STORAGE
+//      };
+//      requestPermissions(permissions, 42);
+//    }
   }
 
-  @Override
-  public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                         int[] grantResults) {
-    if (!hasStoragePermission()) {
-      Toast.makeText(getApplication(), R.string.leak_canary_permission_not_granted, LENGTH_LONG)
-          .show();
-    }
-    finish();
-  }
+//  @Override
+//  public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//                                         int[] grantResults) {
+//    if (!hasStoragePermission()) {
+//      Toast.makeText(getApplication(), R.string.leak_canary_permission_not_granted, LENGTH_LONG)
+//          .show();
+//    }
+//    finish();
+//  }
 
-  private boolean hasStoragePermission() {
-    return checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED;
-  }
+//  private boolean hasStoragePermission() {
+//    return checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED;
+//  }
 }

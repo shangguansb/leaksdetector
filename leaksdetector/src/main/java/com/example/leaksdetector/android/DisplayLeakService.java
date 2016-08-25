@@ -97,7 +97,7 @@ public class DisplayLeakService extends AbstractAnalysisResultService {
             contentText = getString(R.string.leak_canary_could_not_save_text);
             pendingIntent = null;
         }
-        showNotification(this, contentTitle, contentText, pendingIntent);
+//        showNotification(this, contentTitle, contentText, pendingIntent);
         afterDefaultHandling(heapDump, result, leakInfo);
     }
 

@@ -30,7 +30,7 @@ import java.io.File;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.os.Build.VERSION.SDK_INT;
-import static android.os.Build.VERSION_CODES.M;
+//import static android.os.Build.VERSION_CODES.M;
 import static android.os.Environment.DIRECTORY_DOWNLOADS;
 import static com.example.leaksdetector.android.internal.LeakCanaryInternals.showNotification;
 
@@ -56,9 +56,9 @@ public final class DefaultLeakDirectoryProvider implements LeakDirectoryProvider
 
     @Override
     public void requestWritePermissionNotification() {
-        if (hasStoragePermission()) {
-            return;
-        }
+//        if (hasStoragePermission()) {
+//            return;
+//        }
         PendingIntent pendingIntent = RequestStoragePermissionActivity.createPendingIntent(context);
         String contentTitle = context.getString(R.string.leak_canary_permission_notification_title);
         CharSequence packageName = context.getPackageName();
@@ -67,32 +67,32 @@ public final class DefaultLeakDirectoryProvider implements LeakDirectoryProvider
         showNotification(context, contentTitle, contentText, pendingIntent);
     }
 
-    @TargetApi(M)
+//    @TargetApi(M)
     @Override
     public void requestPermission(Activity activity) {
-        if (hasStoragePermission()) {
-            return;
-        }
+//        if (hasStoragePermission()) {
+//            return;
+//        }
         String[] permissions = {
                 WRITE_EXTERNAL_STORAGE
         };
-        activity.requestPermissions(permissions, 42);
+//        activity.requestPermissions(permissions, 42);
     }
 
     @Override
     public boolean isLeakStorageWritable() {
-        if (!hasStoragePermission()) {
-            return false;
-        }
+//        if (!hasStoragePermission()) {
+//            return false;
+//        }
         String state = Environment.getExternalStorageState();
         return Environment.MEDIA_MOUNTED.equals(state);
     }
 
-    @TargetApi(M)
-    private boolean hasStoragePermission() {
-        if (SDK_INT < M) {
-            return true;
-        }
-        return context.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED;
-    }
+////    @TargetApi(M)
+//    private boolean hasStoragePermission() {
+//        if (SDK_INT < M) {
+//            return true;
+//        }
+//        return context.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED;
+//    }
 }
